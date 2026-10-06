@@ -197,9 +197,10 @@ impl<'pass> BlockFormattingContext<'pass> {
             is_line_clamp_container,
             // NB: Measurements at a definite inline size need the clamped block size, just like committed layout.
             max_lines: Cell::new(
-                ((!run.purpose.is_measurement()
-                    || run.records.used_values(run.box_).has_definite_inline_size()
-                    || style.writing_mode() != writing_mode::HORIZONTAL_TB)
+                (run.purpose != formatting_context::LayoutPurpose::UnclampedLineClampMeasurement
+                    && (!run.purpose.is_measurement()
+                        || run.records.used_values(run.box_).has_definite_inline_size()
+                        || style.writing_mode() != writing_mode::HORIZONTAL_TB)
                     && is_line_clamp_container
                     && style.max_lines() > 0)
                     .then_some(style.max_lines() as usize),
@@ -2324,6 +2325,30 @@ impl<'pass> BlockFormattingContext<'pass> {
 
     pub(crate) fn run(&self, run: &FormattingContextRun<'pass>, input: LayoutInput) {
         let available_space = input.available_space;
+        // Firefox preserves the historical WebKit behavior of exposing the full
+        // height of legacy-clamped content through scrollHeight. Sites such as
+        // YouTube use that difference to decide whether to show “Read more”.
+        if !run.purpose.is_measurement()
+            && self.style(self.run.box_).continue_() == continue_value::_WEBKIT_LEGACY
+            && self.style(self.run.box_).max_lines() > 0
+        {
+            let root_used = self.used(self.run.box_);
+            let measurement = formatting_context::MeasurementState::create(self.run.callbacks);
+            let measurement_root = used_values::UsedValuesCellState::capture(root_used).materialize_record();
+            let measurement_result = measurement.run_with_purpose(
+                formatting_context::LayoutPurpose::UnclampedLineClampMeasurement,
+                self.run.box_,
+                &measurement_root,
+                self.run.layout_mode,
+                LayoutInput {
+                    participation: ParticipationInParentFormattingContext::Root,
+                    ..input
+                },
+            );
+            root_used
+                .unclamped_legacy_line_clamp_content_block_size
+                .set(Some(measurement_result.automatic_content_block_size));
+        }
         if self.is_line_clamp_container && self.style(self.run.box_).max_lines() == 0 {
             let automatic_block_size = self.resolve_automatic_line_clamp_block_size(input);
             if run.purpose.is_measurement() {

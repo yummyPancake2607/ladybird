@@ -300,6 +300,9 @@ fn measure_scrollable_overflow_impl(
     });
     let line_clamp_clip = has_line_clamp_point.then(|| style_queries::line_clamp_clip_rect(layout_arena, box_node));
     let clip_in_flow = |rect: CssPixelRect| line_clamp_clip.map_or(rect, |clip| rect.intersected(clip));
+    let unclamped_legacy_line_clamp_content_block_size = layout_arena.with_committed_fragment_link(box_node, |link| {
+        link.and_then(|link| link.fragment.unclamped_legacy_line_clamp_content_block_size)
+    });
 
     if let Some(still_valid_overflow) = still_valid_overflow {
         let scrollable_overflow_rect =
@@ -606,6 +609,25 @@ fn measure_scrollable_overflow_impl(
         scrollable_overflow_rect = CssPixelRect::new(left, top, (right - left).max(zero), (bottom - top).max(zero));
         has_scrollable_overflow =
             !paintable_absolute_padding_box.contains_rect(scrollable_overflow_rect) && box_is_scroll_container;
+    }
+
+    // Match the historical -webkit-line-clamp metric used by Firefox. The
+    // content remains visually clamped; only scrollHeight sees its natural
+    // block size so script can offer an expansion control. This only applies
+    // when the box is a scroll container (overflow: hidden/auto/scroll):
+    // real browsers never expose the unclamped height on a plain
+    // overflow: visible box, where scrollHeight tracks the visible layout.
+    if let Some(unclamped_block_size) = unclamped_legacy_line_clamp_content_block_size
+        && box_is_scroll_container
+        && layout_arena
+            .node_style_if_live(box_node)
+            .is_some_and(|style| style.writing_mode() == writing_mode::HORIZONTAL_TB)
+    {
+        scrollable_overflow_rect.set_bottom(
+            scrollable_overflow_rect
+                .bottom()
+                .max(paintable_absolute_content_box.y + unclamped_block_size),
+        );
     }
 
     store_overflow_data(

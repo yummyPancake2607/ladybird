@@ -330,6 +330,10 @@ pub(crate) struct UsedValues {
     pub is_collapsed_borders_table_box: Cell<bool>,
     pub has_line_clamp_point: Cell<bool>,
     pub is_invisible_for_line_clamp: Cell<bool>,
+    // The legacy -webkit-line-clamp implementation in Firefox exposes the unclamped
+    // block size through scrollHeight. Keep it separate from the used size, since
+    // the latter must exclude collapsed content.
+    pub unclamped_legacy_line_clamp_content_block_size: Cell<Option<CssPixels>>,
 
     // For table cells and table-column(-group) boxes: the first grid column the box occupies and the number of grid
     // columns it spans, so painting can find the cells that originate in a column (CSS 2.2 §17.5.1).
@@ -392,6 +396,7 @@ impl Default for UsedValues {
             is_collapsed_borders_table_box: Cell::new(false),
             has_line_clamp_point: Cell::new(false),
             is_invisible_for_line_clamp: Cell::new(false),
+            unclamped_legacy_line_clamp_content_block_size: Cell::new(None),
             table_column_index: Cell::new(0),
             table_column_span: Cell::new(0),
             hidden_by_collapsed_columns: Cell::new(false),
@@ -591,6 +596,7 @@ used_values_cell_state! {
     is_collapsed_borders_table_box: bool,
     has_line_clamp_point: bool,
     is_invisible_for_line_clamp: bool,
+    unclamped_legacy_line_clamp_content_block_size: Option<CssPixels>,
     table_column_index: u32,
     table_column_span: u32,
     hidden_by_collapsed_columns: bool,

@@ -116,12 +116,13 @@ pub(crate) enum TableWrapperInlineSizeMode {
 pub(crate) enum LayoutPurpose {
     Commit,
     Measurement,
+    UnclampedLineClampMeasurement,
     IntrinsicInlineMeasurement,
 }
 
 impl LayoutPurpose {
     pub(crate) fn is_measurement(self) -> bool {
-        matches!(self, Self::Measurement | Self::IntrinsicInlineMeasurement)
+        matches!(self, Self::Measurement | Self::UnclampedLineClampMeasurement | Self::IntrinsicInlineMeasurement)
     }
 }
 

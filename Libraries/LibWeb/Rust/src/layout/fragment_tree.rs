@@ -38,6 +38,7 @@ pub(crate) struct Fragment {
     pub(crate) computed_svg_path: Option<std::sync::Arc<libgfx_rust::path::OwnedPath>>,
     pub(crate) has_line_clamp_point: bool,
     pub(crate) is_invisible_for_line_clamp: bool,
+    pub(crate) unclamped_legacy_line_clamp_content_block_size: Option<CssPixels>,
     pub(crate) children: Vec<FragmentLink>,
 }
 
@@ -108,6 +109,7 @@ impl Fragment {
             && same_allocation(self.computed_svg_path.as_ref(), previous.computed_svg_path.as_ref())
             && self.has_line_clamp_point == previous.has_line_clamp_point
             && self.is_invisible_for_line_clamp == previous.is_invisible_for_line_clamp
+            && self.unclamped_legacy_line_clamp_content_block_size == previous.unclamped_legacy_line_clamp_content_block_size
     }
 
     pub(crate) fn has_same_child_placements(&self, previous: &Fragment) -> bool {
@@ -165,6 +167,7 @@ impl FragmentLink {
                 computed_svg_path: None,
                 has_line_clamp_point: false,
                 is_invisible_for_line_clamp: false,
+                unclamped_legacy_line_clamp_content_block_size: None,
                 children: Vec::new(),
             }),
             committed_offset: Default::default(),
@@ -392,6 +395,7 @@ fn snapshot_fragment(
         computed_svg_path,
         has_line_clamp_point: used.has_line_clamp_point.get(),
         is_invisible_for_line_clamp: used.is_invisible_for_line_clamp.get(),
+        unclamped_legacy_line_clamp_content_block_size: used.unclamped_legacy_line_clamp_content_block_size.get(),
         children,
     };
     if let Some(previous) = previously_committed_fragment_matching(callbacks, &fragment) {

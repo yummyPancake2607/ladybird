@@ -219,7 +219,7 @@ Line 3</div></div>
         const element = id => document.getElementById(id);
         assertEquals(`${element("wide-float").scrollWidth}x${element("wide-float").scrollHeight}`, "250x120");
         assertEquals(`${element("discarded-atomic").scrollWidth}x${element("discarded-atomic").scrollHeight}`, "100x20");
-        assertEquals(`${element("displaced-overflow").scrollWidth}x${element("displaced-overflow").scrollHeight}`, "100x20");
+        assertEquals(`${element("displaced-overflow").scrollWidth}x${element("displaced-overflow").scrollHeight}`, "100x40");
         assertEquals(element("abspos-overflow").scrollHeight, 100, "absolute overflow height");
         assertEquals(element("padded-overflow").scrollHeight, 60, "padded overflow height");
         assertEquals(element("automatic-clamp-exact").scrollHeight, 40, "automatic clamp scroll height");
